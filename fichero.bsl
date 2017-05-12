@@ -1,7 +1,27 @@
-1 rem hola mundo
-2 input u
-5 let Z = 0
-10 let Y = 1
-16 let Y = 2
-15 let x = Z+Y+u
-50 end
+5 rem suma 1 a x
+
+10 input x
+
+6 let y = 0
+
+15 rem verifica que y == x
+
+20 if y == x goto 60
+
+25 rem incrementa y
+
+30 let y =y+1
+
+35 rem suma y al total
+
+40 let t = t + y
+
+45 rem ciclo sobre y
+
+50 goto 20
+
+55 rem despliega resultado
+
+60 print t
+
+99 end

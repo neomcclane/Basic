@@ -22,7 +22,9 @@ Frontend::Frontend(string nFichero) {
     ePrint = "^([0-9]+)\\s(print|PRINT)\\s([a-z]|[A-Z])$";
     eEnd = "^([0-9]+)\\s(end|END)$";
     eLineaBlanco = "^(\\n*)$";
-    eIfGoto = "^([0-9]+)\\s(if|IF)\\s([a-z]|[A-Z]|[0-9]+)\\s?(==|<=|>=)\\s?([a-z]|[A-Z]|[0-9]+)\\s(goto|GOTO)\\s([0-9]+)$";
+    
+    eIfGoto = "^([0-9]+)\\s(if|IF)\\s([a-zA-Z0-9*=<>\\s]+)\\s(goto|GOTO)\\s([0-9]+)$";
+    
     eLet = "^([0-9]+)\\s?(let)\\s?([a-zA-Z])\\s?(=)\\s?([0-9a-zA-Z\\+-/\\*\\s\\(\\)]+|[])$";
     eGoto = "^([0-9]+)\\s(goto|GOTO)\\s([0-9]+)$";
 
@@ -45,7 +47,7 @@ void Frontend::vaciarMemoria() {
         delete m;
     }
     delete memoria;
-    cout << "\n\nvaciado mamoria" << endl;
+    // cout << "\n\nvaciado mamoria" << endl;
 }
 
 void Frontend::vaciarTablaSimbolo() {
@@ -60,7 +62,7 @@ void Frontend::vaciarTablaSimbolo() {
 
     delete tablaSimbolo;
    
-    cout << "vaciado tablaSimbolo" << endl;
+    // cout << "vaciado tablaSimbolo" << endl;
 }
 
 Frontend::~Frontend() {
@@ -96,35 +98,37 @@ void Frontend::analizaEstructuraLineas() {
 void Frontend::analizadorLexico(string& linea) {
     smatch sm;
     if(regex_match(linea, sm, regex {eRem})) { // es un REM
-       agregarElementoTablaSimbolo(sm[1], 'L');
+       agregarElementoTablaSimbolo(sm[1], LINEA);
     } 
     else if(regex_match(linea, sm, regex {eInput})) { // es un INPUT
-        cout << "INPUT" << endl;
-        agregarElementoTablaSimbolo(sm[1], 'L');
-        agregarElementoTablaSimbolo(sm[3], 'V');
+        agregarElementoTablaSimbolo(sm[1], LINEA);
+        agregarElementoTablaSimbolo(sm[3], VARIABLE);
         
     }
     else if(regex_match(linea, sm, regex {eLet})) { // es un LET
-        agregarElementoTablaSimbolo(sm[1], 'L');
-        agregarElementoTablaSimbolo(sm[3], 'V');
+        agregarElementoTablaSimbolo(sm[1], LINEA);
+        agregarElementoTablaSimbolo(sm[3], VARIABLE);
         string ex = sm[5];
         // string ex = ;
         evaluarExpresion(regex_replace(ex, regex{"\\s"}, ""));
     }
     else if(regex_match(linea, sm, regex {ePrint})) { // es un PRINT
-        cout << "PRINT" << endl;
+        agregarElementoTablaSimbolo(sm[1], LINEA);
     }
     else if(regex_match(linea, sm, regex {eIfGoto})) { // es un IF GOTO
-        cout << "IF GOTO" << endl;
+       agregarElementoTablaSimbolo(sm[1], LINEA);
+       string ex = sm[3];
+       evaluarExpresion(regex_replace(ex, regex{"\\s"}, ""));
+
     }
     else if(regex_match(linea, sm, regex {eGoto})) { // es un GOTO
-        cout << "GOTO" << endl;
+        agregarElementoTablaSimbolo(sm[1], LINEA);
     }
     else if(regex_match(linea, sm, regex {eLineaBlanco})) { // es una LINEA
-        cout << endl;
+        //cout << endl;
     }
     else if(regex_match(linea, sm, regex {eEnd})) { // es un END
-        agregarElementoTablaSimbolo(sm[1], 'L');
+        agregarElementoTablaSimbolo(sm[1], LINEA);
     }
     else {
         string err = "Error: en '"+linea+"'";
@@ -167,7 +171,6 @@ vector<string> Frontend::generarVectorExpresion(const string& expresion) {
 
 void Frontend::evaluarExpresion(string expresion) {
     vector<string> vExpresion = generarVectorExpresion(expresion);
-    cout << expresion << endl;
 
     for(string& token:vExpresion) {
         if(regex_match(token, regex{"([a-zA-Z])"}) && !existeElementoTablaSimbolo(token, VARIABLE)) {
