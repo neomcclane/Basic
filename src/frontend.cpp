@@ -200,6 +200,9 @@ void Frontend::agregarElementoTablaSimbolo(const string& sSimbolo, const char ti
         if(tipo == LINEA && !existeElementoTablaSimbolo(sSimbolo, tipo)) {
             entrada0->sig = new EntradaTabla{stoi(sSimbolo), "", tipo, contadorInstrucciones};
         }
+        else if(tipo == LINEA && existeElementoTablaSimbolo(sSimbolo, tipo)) {
+            throw lib::ELineaRepetida("Error, la linea '"+sSimbolo+"' ya se encuentra registrada.");
+        }
         else if(!existeElementoTablaSimbolo(sSimbolo, tipo))     {
             entrada0->sig = new EntradaTabla{-1, sSimbolo, tipo, contadorInstrucciones};
             contadorVariables++;

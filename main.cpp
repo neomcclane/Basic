@@ -40,6 +40,11 @@ int main(int argc, char* argv[]) {
         delete app;
         return EXIT_FAILURE;
     }
+    catch(const lib::ELineaRepetida& e) {
+        cerr << e.what() << endl;
+        delete app;
+        return EXIT_FAILURE;
+    }
     catch(...) {
         cerr << "Error generico" << endl;
         delete app;

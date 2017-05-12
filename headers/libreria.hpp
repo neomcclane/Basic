@@ -31,6 +31,11 @@ namespace lib {
 
     };
 
+    class ELineaRepetida: public runtime_error {
+        public:
+            ELineaRepetida(string msg):runtime_error(msg) {}
+    };
+
     // funciones
     void validarFichero(string&);
 
