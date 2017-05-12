@@ -24,6 +24,13 @@ namespace lib {
             ELexico(string msg): runtime_error(msg) {}
     };
 
+    class EVariableNoDeclarada: public runtime_error {
+
+        public:
+            EVariableNoDeclarada(string msg):runtime_error(msg) {}
+
+    };
+
     // funciones
     void validarFichero(string&);
 

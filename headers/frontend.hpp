@@ -53,6 +53,9 @@ class Frontend {
 
          void agregarElementoTablaSimbolo(const string&, const char);
          void imprimirTablaSimbolo();
+         bool existeElementoTablaSimbolo(const string, const char&) const;
+         void evaluarExpresion(string); 
+         vector<string> generarVectorExpresion(const string&);
 
          void vaciarMemoria();
          void vaciarTablaSimbolo();

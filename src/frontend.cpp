@@ -23,7 +23,7 @@ Frontend::Frontend(string nFichero) {
     eEnd = "^([0-9]+)\\s(end|END)$";
     eLineaBlanco = "^(\\n*)$";
     eIfGoto = "^([0-9]+)\\s(if|IF)\\s([a-z]|[A-Z]|[0-9]+)\\s?(==|<=|>=)\\s?([a-z]|[A-Z]|[0-9]+)\\s(goto|GOTO)\\s([0-9]+)$";
-    eLet = "^([0-9]+)\\s(let|LET)\\s([a-z]|[A-Z])\\s?(=)\\s?([a-z]|[A-Z]|[0-9]+)\\s?(\\+|-|\\*|/)\\s?([a-z]|[A-Z]|[0-9]+)$";
+    eLet = "^([0-9]+)\\s?(let)\\s?([a-zA-Z])\\s?(=)\\s?([0-9a-zA-Z\\+-/\\*\\s\\(\\)]+|[])$";
     eGoto = "^([0-9]+)\\s(goto|GOTO)\\s([0-9]+)$";
 
 
@@ -104,14 +104,18 @@ void Frontend::analizadorLexico(string& linea) {
         agregarElementoTablaSimbolo(sm[3], 'V');
         
     }
+    else if(regex_match(linea, sm, regex {eLet})) { // es un LET
+        agregarElementoTablaSimbolo(sm[1], 'L');
+        agregarElementoTablaSimbolo(sm[3], 'V');
+        string ex = sm[5];
+        // string ex = ;
+        evaluarExpresion(regex_replace(ex, regex{"\\s"}, ""));
+    }
     else if(regex_match(linea, sm, regex {ePrint})) { // es un PRINT
         cout << "PRINT" << endl;
     }
     else if(regex_match(linea, sm, regex {eIfGoto})) { // es un IF GOTO
         cout << "IF GOTO" << endl;
-    }
-    else if(regex_match(linea, sm, regex {eLet})) { // es un LET
-        cout << "LET" << endl;
     }
     else if(regex_match(linea, sm, regex {eGoto})) { // es un GOTO
         cout << "GOTO" << endl;
@@ -120,7 +124,7 @@ void Frontend::analizadorLexico(string& linea) {
         cout << endl;
     }
     else if(regex_match(linea, sm, regex {eEnd})) { // es un END
-        cout << "END" << endl;
+        agregarElementoTablaSimbolo(sm[1], 'L');
     }
     else {
         string err = "Error: en '"+linea+"'";
@@ -128,12 +132,61 @@ void Frontend::analizadorLexico(string& linea) {
     }
 }
 
+vector<string> Frontend::generarVectorExpresion(const string& expresion) {
+    vector<string> vExpresion;
+    string tokens = "";
+    string sToken = "";
+    //cout << "expresion: " << expresion << endl;
+    for(const char cToken:expresion) {
+        sToken = cToken;
+
+        if(regex_match(sToken, regex{"([a-zA-Z])"})) {
+            if(tokens != "") {
+                vExpresion.push_back(tokens);
+                tokens = "";
+            } 
+            vExpresion.push_back(sToken);
+        
+        }
+        else if(regex_match(sToken, regex{"([0-9])"})) {
+            tokens += sToken;
+        }
+        else if(regex_match(sToken, regex{"([\\+\\*-/\\(\\)])"})) {
+            if(tokens != "") {
+                vExpresion.push_back(tokens);
+                tokens = "";
+            }
+            vExpresion.push_back(sToken);
+        }
+    }
+    if(tokens != "") {
+        vExpresion.push_back(tokens);
+    }
+    return vExpresion;
+}
+
+void Frontend::evaluarExpresion(string expresion) {
+    vector<string> vExpresion = generarVectorExpresion(expresion);
+    cout << expresion << endl;
+
+    for(string& token:vExpresion) {
+        if(regex_match(token, regex{"([a-zA-Z])"}) && !existeElementoTablaSimbolo(token, VARIABLE)) {
+            
+            throw lib::EVariableNoDeclarada("Error, '"+token+"' no ha sido declarada.");
+        
+        }
+        else if(regex_match(token, regex{"([0-9]+)"}) && !existeElementoTablaSimbolo(token, CONSTANTE)) {
+            agregarElementoTablaSimbolo(token, CONSTANTE);
+        }
+    }
+}
+
 void Frontend::agregarElementoTablaSimbolo(const string& sSimbolo, const char tipo) {
     if(tablaSimbolo == nullptr) {
-        if(tipo == LINEA ) {
+        if(tipo == LINEA && !existeElementoTablaSimbolo(sSimbolo, tipo)) {
             tablaSimbolo = new EntradaTabla{stoi(sSimbolo), "", tipo, contadorInstrucciones};
         }
-        else {
+        else if(!existeElementoTablaSimbolo(sSimbolo, tipo)) {
             tablaSimbolo = new EntradaTabla{-1, sSimbolo, tipo, contadorInstrucciones};
             contadorVariables++;
         }
@@ -144,10 +197,10 @@ void Frontend::agregarElementoTablaSimbolo(const string& sSimbolo, const char ti
         while(entrada0->sig != nullptr) {
             entrada0 = entrada0->sig;
         }
-        if(tipo == LINEA) {
+        if(tipo == LINEA && !existeElementoTablaSimbolo(sSimbolo, tipo)) {
             entrada0->sig = new EntradaTabla{stoi(sSimbolo), "", tipo, contadorInstrucciones};
         }
-        else {
+        else if(!existeElementoTablaSimbolo(sSimbolo, tipo))     {
             entrada0->sig = new EntradaTabla{-1, sSimbolo, tipo, contadorInstrucciones};
             contadorVariables++;
         }
@@ -173,6 +226,27 @@ void Frontend::imprimirTablaSimbolo() {
     
     
 
+}
+
+bool Frontend::existeElementoTablaSimbolo(const string simbolo, const char& tipo) const {
+    bool resultado = false;
+    EntradaTabla* entrada = tablaSimbolo;
+
+    while(entrada != nullptr) {
+
+        if(tipo == LINEA && tipo == entrada->tipo && entrada->iSimbolo == stoi(simbolo)) {
+            resultado = true;
+            break;
+        } 
+        else if(tipo != LINEA && tipo == entrada->tipo && entrada->sSimbolo == simbolo){
+            resultado = true;
+            break;
+        }
+
+        entrada = entrada->sig;
+    }
+
+    return resultado;
 }
 
 void Frontend::analizadorSintactico() {

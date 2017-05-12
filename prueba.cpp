@@ -1,21 +1,19 @@
 #include <iostream>
-#include <cstring>
+#include <regex>
 
 using namespace std;
 
-int main(int argc, char* argv[]) {
-    char c0[] = "b";
-    char c1[] = "a";
-    char* ptrChar = c0;
-    char* ptrChar1 = c1;
+int main() {
 
-    if(strcmp(ptrChar, ptrChar1) == 0) {
-        cout << "igualdad" << endl;
+    string s = "a+a";
+    regex e("^(?=.*[a-z]+)(?=.*[0-9]{2})([a-z0-9]+){1,10}$");
+    smatch sm;
+
+    if(regex_search(s, sm, regex{"([a-z])\\1"})) {
+        for(string token:sm) {
+            cout << token << endl;
+        }
     }
-    
-    cout <<"stcmp: " << strcmp(ptrChar, ptrChar1) << endl;
-    
-
 
     return 0;
 }
