@@ -263,6 +263,11 @@ void Frontend::segundaPasada() {
 }
 
 void Frontend::llenarMemoria() {
+    llenarMemoriaConstantes();
+    llenarMemoriaVariables();
+}
+
+void Frontend::llenarMemoriaConstantes() {
     EntradaTabla* entrada = tablaSimbolo;
 
     while(entrada != nullptr) {
@@ -270,7 +275,17 @@ void Frontend::llenarMemoria() {
         if(entrada->tipo == CONSTANTE) {
             agregarConstanteMemoria(entrada->iSimbolo, *entrada);
         }
-        else if(entrada->tipo == VARIABLE) {
+        
+        entrada = entrada->sig;
+    }
+}
+
+void Frontend::llenarMemoriaVariables() {
+    EntradaTabla* entrada = tablaSimbolo;
+
+    while(entrada != nullptr) {
+        
+        if(entrada->tipo == VARIABLE) {
             agregarVariableMemoria(*entrada);
         }
         

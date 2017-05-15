@@ -61,6 +61,8 @@ class Frontend {
 
          // metodos segunda pasada
          void llenarMemoria();
+         void llenarMemoriaConstantes();
+         void llenarMemoriaVariables();
          void agregarConstanteMemoria(int&, EntradaTabla&);
          void agregarVariableMemoria(EntradaTabla&);
          void imprimirMemoria();
