@@ -17,6 +17,7 @@ struct EntradaTabla {
 
 struct EstructuraMemoria {
     int ubicacion;
+    int instruccion;
     EstructuraMemoria* sig;
 };
 
@@ -40,10 +41,11 @@ class Frontend {
         EntradaTabla* tablaSimbolo;
         EstructuraMemoria* memoria;
         int contadorInstrucciones;
-        int contadorVariables;
+        int multiplicador;
 
     protected: // metodos
          void primeraPasada();
+         void segundaPasada();
     
     private: // metodos
          void abrirFichero();
@@ -54,8 +56,14 @@ class Frontend {
          void agregarElementoTablaSimbolo(const string&, const char);
          void imprimirTablaSimbolo();
          bool existeElementoTablaSimbolo(const string, const char&) const;
-         void evaluarExpresion(string); 
+         void evaluarExpresion(string, string); 
          vector<string> generarVectorExpresion(const string&);
+
+         // metodos segunda pasada
+         void llenarMemoria();
+         void agregarConstanteMemoria(int&, EntradaTabla&);
+         void agregarVariableMemoria(EntradaTabla&);
+         void imprimirMemoria();
 
          void vaciarMemoria();
          void vaciarTablaSimbolo();

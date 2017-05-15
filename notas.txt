@@ -1,0 +1,18 @@
++ 10 -> input
++ 11 -> print
+
++ 20 -> cargar en el acumulador
++ 21 -> almacenar en memoria
+
++ 30 -> suma
++ 31 -> resta 
++ 32 -> division
++ 33 -> multiplicacion
+
++ 40 -> salto a 
++ 41 -> salto si el valor en el acumulador es negativo
++ 42 -> salto si el valor en el acumulador es cero
++ 43 -> fin del programa 
+
++ 90 -> constante
++ 91 -> variable

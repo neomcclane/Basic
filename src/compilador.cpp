@@ -14,4 +14,5 @@ Compilador::~Compilador() {
 
 void Compilador::run() {
     this->primeraPasada();
+    this->segundaPasada();
 }

@@ -3,6 +3,7 @@
 #include <vector>
 #include <cstring>
 #include <regex>
+#include <cmath>
 
 #include "../headers/frontend.hpp"
 #include "../headers/libreria.hpp"
@@ -33,8 +34,7 @@ Frontend::Frontend(string nFichero) {
     tablaSimbolo = nullptr;
     memoria = nullptr;
     contadorInstrucciones = 0;
-    contadorVariables = 0;
-
+    multiplicador = 100;
 }
 
 void Frontend::vaciarMemoria() {
@@ -86,7 +86,6 @@ void Frontend::abrirFichero() {
 void Frontend::primeraPasada() {
     abrirFichero();
     analizaEstructuraLineas();
-    imprimirTablaSimbolo();
 }
 
 void Frontend::analizaEstructuraLineas() {
@@ -110,7 +109,7 @@ void Frontend::analizadorLexico(string& linea) {
         agregarElementoTablaSimbolo(sm[3], VARIABLE);
         string ex = sm[5];
         // string ex = ;
-        evaluarExpresion(regex_replace(ex, regex{"\\s"}, ""));
+        evaluarExpresion(regex_replace(ex, regex{"\\s"}, ""), sm[1]);
     }
     else if(regex_match(linea, sm, regex {ePrint})) { // es un PRINT
         agregarElementoTablaSimbolo(sm[1], LINEA);
@@ -118,7 +117,7 @@ void Frontend::analizadorLexico(string& linea) {
     else if(regex_match(linea, sm, regex {eIfGoto})) { // es un IF GOTO
        agregarElementoTablaSimbolo(sm[1], LINEA);
        string ex = sm[3];
-       evaluarExpresion(regex_replace(ex, regex{"\\s"}, ""));
+       evaluarExpresion(regex_replace(ex, regex{"\\s"}, ""), sm[1]);
 
     }
     else if(regex_match(linea, sm, regex {eGoto})) { // es un GOTO
@@ -169,13 +168,13 @@ vector<string> Frontend::generarVectorExpresion(const string& expresion) {
     return vExpresion;
 }
 
-void Frontend::evaluarExpresion(string expresion) {
+void Frontend::evaluarExpresion(string expresion, string linea) {
     vector<string> vExpresion = generarVectorExpresion(expresion);
 
     for(string& token:vExpresion) {
         if(regex_match(token, regex{"([a-zA-Z])"}) && !existeElementoTablaSimbolo(token, VARIABLE)) {
             
-            throw lib::EVariableNoDeclarada("Error, '"+token+"' no ha sido declarada.");
+            throw lib::EVariableNoDeclarada("Error en linea '"+linea+"', '"+token+"' no ha sido declarada.");
         
         }
         else if(regex_match(token, regex{"([0-9]+)"}) && !existeElementoTablaSimbolo(token, CONSTANTE)) {
@@ -187,11 +186,13 @@ void Frontend::evaluarExpresion(string expresion) {
 void Frontend::agregarElementoTablaSimbolo(const string& sSimbolo, const char tipo) {
     if(tablaSimbolo == nullptr) {
         if(tipo == LINEA && !existeElementoTablaSimbolo(sSimbolo, tipo)) {
-            tablaSimbolo = new EntradaTabla{stoi(sSimbolo), "", tipo, contadorInstrucciones};
+            tablaSimbolo = new EntradaTabla{stoi(sSimbolo), "", tipo, 0};
         }
-        else if(!existeElementoTablaSimbolo(sSimbolo, tipo)) {
-            tablaSimbolo = new EntradaTabla{-1, sSimbolo, tipo, contadorInstrucciones};
-            contadorVariables++;
+        else if(tipo == VARIABLE && !existeElementoTablaSimbolo(sSimbolo, tipo)) {
+            tablaSimbolo = new EntradaTabla{-1, sSimbolo, tipo, 0};
+        }
+        else if(tipo == CONSTANTE && !existeElementoTablaSimbolo(sSimbolo, tipo)) {
+            tablaSimbolo = new EntradaTabla{stoi(sSimbolo), "", tipo, 0};
         }
     }
     else {
@@ -201,15 +202,18 @@ void Frontend::agregarElementoTablaSimbolo(const string& sSimbolo, const char ti
             entrada0 = entrada0->sig;
         }
         if(tipo == LINEA && !existeElementoTablaSimbolo(sSimbolo, tipo)) {
-            entrada0->sig = new EntradaTabla{stoi(sSimbolo), "", tipo, contadorInstrucciones};
+            entrada0->sig = new EntradaTabla{stoi(sSimbolo), "", tipo, 0};
         }
         else if(tipo == LINEA && existeElementoTablaSimbolo(sSimbolo, tipo)) {
             throw lib::ELineaRepetida("Error, la linea '"+sSimbolo+"' ya se encuentra registrada.");
         }
-        else if(!existeElementoTablaSimbolo(sSimbolo, tipo))     {
-            entrada0->sig = new EntradaTabla{-1, sSimbolo, tipo, contadorInstrucciones};
-            contadorVariables++;
+        else if(tipo == VARIABLE && !existeElementoTablaSimbolo(sSimbolo, tipo)) {
+            entrada0->sig = new EntradaTabla{-1, sSimbolo, tipo, 0};
         }
+        else if(tipo == CONSTANTE && !existeElementoTablaSimbolo(sSimbolo, tipo)) {
+            entrada0->sig = new EntradaTabla{stoi(sSimbolo), "", tipo, 0};
+        }
+
     }
 }
 
@@ -219,7 +223,7 @@ void Frontend::imprimirTablaSimbolo() {
     cout << "\tSimbolo\t\t Tipo \t\t Ubicacion" << endl;
 
     while(entrada != nullptr) {
-        if(entrada->tipo == LINEA) {
+        if(entrada->tipo != VARIABLE) {
             cout << "\t  " << entrada->iSimbolo << "\t \t  " << entrada->tipo << "\t \t  " << entrada->ubicacion << endl;
         }
         else {
@@ -229,9 +233,6 @@ void Frontend::imprimirTablaSimbolo() {
     }
     
     cout << "\n\n=======================================================" << endl;
-    
-    
-
 }
 
 bool Frontend::existeElementoTablaSimbolo(const string simbolo, const char& tipo) const {
@@ -253,6 +254,81 @@ bool Frontend::existeElementoTablaSimbolo(const string simbolo, const char& tipo
     }
 
     return resultado;
+}
+
+void Frontend::segundaPasada() {
+    llenarMemoria();
+    imprimirTablaSimbolo();
+    imprimirMemoria();
+}
+
+void Frontend::llenarMemoria() {
+    EntradaTabla* entrada = tablaSimbolo;
+
+    while(entrada != nullptr) {
+        
+        if(entrada->tipo == CONSTANTE) {
+            agregarConstanteMemoria(entrada->iSimbolo, *entrada);
+        }
+        else if(entrada->tipo == VARIABLE) {
+            agregarVariableMemoria(*entrada);
+        }
+        
+        entrada = entrada->sig;
+    }
+}
+
+void Frontend::agregarConstanteMemoria(int& constante, EntradaTabla& refEntrada) {
+    if(memoria == nullptr) {
+        memoria = new EstructuraMemoria{contadorInstrucciones, (constante < 0)?((90*multiplicador)+abs(constante))*(-1):(90*multiplicador)+constante, nullptr};
+        refEntrada.ubicacion = contadorInstrucciones;
+        contadorInstrucciones++;
+    }
+    else {
+        EstructuraMemoria* auxMemoria = memoria;
+
+        while(auxMemoria->sig != nullptr) {
+            auxMemoria = auxMemoria->sig;
+        } 
+
+        auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones, (constante < 0)?((90*multiplicador)+abs(constante))*(-1):(90*multiplicador)+constante, nullptr};
+        refEntrada.ubicacion = contadorInstrucciones;
+        contadorInstrucciones++;
+    }
+    
+}
+
+void Frontend::agregarVariableMemoria(EntradaTabla& refEntrada) {
+
+    if(memoria == nullptr) {
+        memoria = new EstructuraMemoria{contadorInstrucciones, (91*multiplicador), nullptr};
+        refEntrada.ubicacion = contadorInstrucciones;
+        contadorInstrucciones++;
+    }
+    else {
+        EstructuraMemoria* auxMemoria = memoria;
+
+        while(auxMemoria->sig != nullptr) {
+            auxMemoria = auxMemoria->sig;
+        } 
+
+        auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones, (91*multiplicador), nullptr};
+        refEntrada.ubicacion = contadorInstrucciones;
+        contadorInstrucciones++;
+    }
+}
+
+void Frontend::imprimirMemoria() {
+    EstructuraMemoria* auxMemoria = memoria;
+    cout << "\n\n=====================TABLA MEMORIA=====================" << endl;
+    cout << "\tInstruccion\t\t Ubicacion" << endl;
+
+    while(auxMemoria != nullptr) {
+        cout << "\t  " << auxMemoria->instruccion << "\t \t\t  " << auxMemoria->ubicacion << endl;
+        auxMemoria = auxMemoria->sig;
+    }
+    
+    cout << "\n\n=======================================================" << endl;
 }
 
 void Frontend::analizadorSintactico() {
