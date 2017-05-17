@@ -63,10 +63,17 @@ class Frontend {
          void llenarMemoria();
          void llenarMemoriaConstantes();
          void llenarMemoriaVariables();
+         void llenarMemoriaInstrucciones();
+         void actualizarUbicacionTS(string, const char&);
+         void analizarInstruccion(string&);
          void agregarConstanteMemoria(int&, EntradaTabla&);
          void agregarVariableMemoria(EntradaTabla&);
          void imprimirMemoria();
-
+         int buscarUbicacionElementoTS(const string&, const char&);
+         void generarInstruccionInput(string);
+         void generarInstruccionPrint(string);
+         void generarInstruccionEnd();
+         void generarInstruccionGoto(string);
          void vaciarMemoria();
          void vaciarTablaSimbolo();
 };

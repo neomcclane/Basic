@@ -1,16 +1,12 @@
 #include <iostream>
+#include <cstring>
 
 using namespace std;
 
 int main() {
-    int* ptrI = new int(10);
-
-
-    int& rI = *ptrI;
-    rI = 85;
-    cout << "i: " << *ptrI;
-
-    delete ptrI;
+    const string s = "1";
     
+    cout << stoi(s);
+
     return 0;
 }

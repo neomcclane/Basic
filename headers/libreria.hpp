@@ -36,6 +36,11 @@ namespace lib {
             ELineaRepetida(string msg):runtime_error(msg) {}
     };
 
+    class EErrorUbicacionTS: public runtime_error {
+        public:
+            EErrorUbicacionTS(string msg): runtime_error(msg){}
+    };
+
     // funciones
     void validarFichero(string&);
 

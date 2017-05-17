@@ -88,6 +88,152 @@ void Frontend::primeraPasada() {
     analizaEstructuraLineas();
 }
 
+void Frontend::segundaPasada() {
+    llenarMemoria();
+    imprimirTablaSimbolo();
+    imprimirMemoria();
+}
+
+void Frontend::llenarMemoria() {
+    llenarMemoriaConstantes();
+    llenarMemoriaVariables();
+    llenarMemoriaInstrucciones();
+}
+
+void Frontend::llenarMemoriaInstrucciones() {
+    for(string& linea:vLinea) {
+        analizarInstruccion(linea);
+    }
+}
+
+void Frontend::analizarInstruccion(string& instruccion) {
+    smatch sm;
+    if(regex_match(instruccion, sm, regex {eRem})) {
+        actualizarUbicacionTS(sm[1], LINEA);
+    }
+    else if(regex_match(instruccion, sm, regex {eInput})) {
+        actualizarUbicacionTS(sm[1], LINEA);   
+        generarInstruccionInput(sm[3]);
+           
+    }
+    else if(regex_match(instruccion, sm, regex {eLet})) {
+        actualizarUbicacionTS(sm[1], LINEA);
+
+    }
+    else if(regex_match(instruccion, sm, regex {ePrint})) {
+        actualizarUbicacionTS(sm[1], LINEA);
+        generarInstruccionPrint(sm[3]);
+    }   
+    else if(regex_match(instruccion, sm, regex {eIfGoto})) {
+        actualizarUbicacionTS(sm[1], LINEA);
+
+    }
+    else if(regex_match(instruccion, sm, regex {eGoto})) {
+        actualizarUbicacionTS(sm[1], LINEA);
+        generarInstruccionGoto(sm[3]);        
+    }
+    else if(regex_match(instruccion, sm, regex {eEnd})) {
+        actualizarUbicacionTS(sm[1], LINEA);
+        generarInstruccionEnd();
+    }
+}
+
+void Frontend::generarInstruccionGoto(string sSimbolo) {
+    EstructuraMemoria* auxMemoria = memoria;
+
+    while(auxMemoria->sig != nullptr) {
+        auxMemoria = auxMemoria->sig;
+    }
+    int ubicacion = buscarUbicacionElementoTS(sSimbolo, LINEA);
+    if(ubicacion != -1) {
+        auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones, 40*multiplicador+ubicacion, nullptr};
+        contadorInstrucciones++;
+    }
+    else {
+        throw lib::EErrorUbicacionTS("Error, en la busqueda de la ubicacion dentro de la TS.");                
+    }
+}
+
+void Frontend::generarInstruccionEnd() {
+    EstructuraMemoria* auxMemoria = memoria;
+
+    while(auxMemoria->sig != nullptr) {
+        auxMemoria = auxMemoria->sig;
+    }
+
+    auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones, 43 * multiplicador, nullptr};
+}
+
+void Frontend::generarInstruccionPrint(string sSimbolo) {
+    EstructuraMemoria* auxMemoria = memoria;
+
+    while(auxMemoria->sig != nullptr) {
+        auxMemoria = auxMemoria->sig;
+    }
+
+    int ubicacion = buscarUbicacionElementoTS(sSimbolo, VARIABLE);
+
+    if(ubicacion != -1) {
+        auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones, 11 * multiplicador + ubicacion, nullptr};
+        contadorInstrucciones++;
+    }
+    else {
+        throw lib::EErrorUbicacionTS("Error, en la busqueda de la ubicacion dentro de la TS.");        
+    }
+}
+
+void Frontend::generarInstruccionInput(string sSimbolo) {
+    EstructuraMemoria* auxMemoria = memoria;
+
+    while(auxMemoria->sig != nullptr) {
+        auxMemoria = auxMemoria->sig;
+    }
+
+    int ubicacion = buscarUbicacionElementoTS(sSimbolo, VARIABLE);
+    
+    if(ubicacion != -1) {
+        auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones, 10*multiplicador+ubicacion, nullptr};
+        contadorInstrucciones++;
+    }
+    else {
+        throw lib::EErrorUbicacionTS("Error, en la busqueda de la ubicacion dentro de la TS.");
+    }
+}
+
+int Frontend::buscarUbicacionElementoTS(const string& sSimbolo, const char& tipo) {
+    int ubicacion = -1;
+    EntradaTabla* entrada = tablaSimbolo;
+    while(entrada != nullptr) {
+        if(tipo == VARIABLE && entrada->tipo == tipo && entrada->sSimbolo == sSimbolo) {
+            ubicacion = entrada->ubicacion;
+            break;
+        }
+        else if(tipo != VARIABLE && entrada->tipo == tipo && entrada->iSimbolo == stoi(sSimbolo)) {
+            ubicacion = entrada->ubicacion;
+            break;
+        }
+        entrada = entrada->sig;
+    }
+    return ubicacion;
+}
+
+void Frontend::actualizarUbicacionTS(string sSimbolo, const char& tipo) {
+    if(tipo == LINEA) {
+        EntradaTabla* entrada = tablaSimbolo;
+        int iSimbolo = stoi(sSimbolo);
+
+        while(entrada != nullptr) {
+            if(entrada->iSimbolo == iSimbolo) {
+                entrada->ubicacion = contadorInstrucciones;
+                break;
+            }
+
+            entrada = entrada->sig;
+        }
+    }
+
+}
+
 void Frontend::analizaEstructuraLineas() {
     for(string& linea:vLinea) {
        analizadorLexico(linea);
@@ -254,17 +400,6 @@ bool Frontend::existeElementoTablaSimbolo(const string simbolo, const char& tipo
     }
 
     return resultado;
-}
-
-void Frontend::segundaPasada() {
-    llenarMemoria();
-    imprimirTablaSimbolo();
-    imprimirMemoria();
-}
-
-void Frontend::llenarMemoria() {
-    llenarMemoriaConstantes();
-    llenarMemoriaVariables();
 }
 
 void Frontend::llenarMemoriaConstantes() {
