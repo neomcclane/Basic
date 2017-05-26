@@ -49,7 +49,6 @@ void Frontend::vaciarMemoria() {
         delete m;
     }
     delete memoria;
-    // cout << "\n\nvaciado mamoria" << endl;
 }
 
 void Frontend::vaciarTablaSimbolo() {
@@ -63,8 +62,6 @@ void Frontend::vaciarTablaSimbolo() {
     }
 
     delete tablaSimbolo;
-   
-    // cout << "vaciado tablaSimbolo" << endl;
 }
 
 Frontend::~Frontend() {
@@ -92,8 +89,8 @@ void Frontend::primeraPasada() {
 
 EstructuraMemoria* Frontend::segundaPasada() {
     llenarMemoria();
-    // imprimirTablaSimbolo();
-    // imprimirMemoria();
+    imprimirTablaSimbolo();
+    imprimirMemoria();
     return memoria;
 }
 
@@ -142,9 +139,7 @@ void Frontend::analizarInstruccion(string& instruccion) {
 }
 
 void Frontend::generarInstruccionIfGoto(string comparacion, string linea) {
-    // comparacion = regex_replace(comparacion, regex {"\\s"}, "");
-    // cout << "comparacion: " << comparacion << endl;
-    // cout << "linea: " << linea << endl;
+    // -------------------
 }
 
 void Frontend::generarInstruccionLet(string variable, string operacion) {
@@ -154,17 +149,7 @@ void Frontend::generarInstruccionLet(string variable, string operacion) {
     generarInstruccionLet(postfijo, variable);
 }
 
-void imprimirPostfijo(Pila* p) {
-    string s = "";
-    while(p != nullptr) {
-        s += p->simbolo;
-        p = p->sig;
-    }
-}
-
 void Frontend::agregarElementoMemoria(EstructuraMemoria** auxMemoria, string& simbolo) {
-    // cout << "variable 0: " << simbolo << endl;
-    // cout << "b: " << buscarUbicacionElementoTS(simbolo) << endl;
     if((*auxMemoria) == nullptr) {
         (*auxMemoria) = new EstructuraMemoria{contadorInstrucciones++, (20*multiplicador)+buscarUbicacionElementoTS(simbolo), nullptr};
     }
@@ -185,15 +170,10 @@ void Frontend::agregarElementoOperacionMemoria(EstructuraMemoria** auxMemoria, P
     delete pPila;
     string tipo;
     Pila* auxPila = (*auxPostfijo);
-    // cout << "\nabajo: " << endl;
-    // imprimirPostfijo((*auxPostfijo));
-    // cout << "arriba: \n" << endl;
     
     int c = 0;
     while(auxPila != nullptr) {
         if(regex_match(auxPila->simbolo, regex {"^[\\+-/\\*]$"})) {
-            // cout << "sale.." << auxPila->simbolo << endl;
-            // cout << "C.." << c << endl;   
             tipo = auxPila->simbolo;
             break;
         }
@@ -202,9 +182,7 @@ void Frontend::agregarElementoOperacionMemoria(EstructuraMemoria** auxMemoria, P
         auxPila = auxPila->sig;
         auxPila->ant = pAnt;
     }
-    // imprimirPostfijo((*auxPostfijo));
-    // cout << "+: " << auxPila->sig->simbolo << endl;
-    // cout << "6: " <<auxPila->ant->simbolo << endl;
+    
     if(auxPila->ant != nullptr) {
         Pila* auxPila0 = auxPila->ant;
         auxPila0->sig = auxPila->sig;
@@ -213,15 +191,13 @@ void Frontend::agregarElementoOperacionMemoria(EstructuraMemoria** auxMemoria, P
         (*auxPostfijo) = (*auxPostfijo)->sig;
     }
     delete auxPila;
-    // imprimirPostfijo((*auxPostfijo));    
-
+    
     EstructuraMemoria* memo = (*auxMemoria);
     while(memo->sig != nullptr) {memo=memo->sig;}
     
 
     if(tipo == "+") {
-       
-        memo->sig = new EstructuraMemoria{contadorInstrucciones++, (30*multiplicador)+abs(buscarUbicacionElementoTS(variable)), nullptr};
+       memo->sig = new EstructuraMemoria{contadorInstrucciones++, (30*multiplicador)+abs(buscarUbicacionElementoTS(variable)), nullptr};
     }
     else if(tipo == "-") {
         memo->sig = new EstructuraMemoria{contadorInstrucciones++, (31*multiplicador)+abs(buscarUbicacionElementoTS(variable)), nullptr};
@@ -235,7 +211,6 @@ void Frontend::agregarElementoOperacionMemoria(EstructuraMemoria** auxMemoria, P
 
     agregarVariableTS(auxMemoria, auxPostfijo);
 }
-
 
 void Frontend::agregarVariableTS(EstructuraMemoria** auxMemoria, Pila** auxPostfijo) {
     EntradaTabla* entrada = tablaSimbolo;
@@ -277,25 +252,15 @@ void Frontend::eliminarElementoPila(Pila** pila, string& simbolo) {
 }
 
 void Frontend::generarInstruccionMemoria(Pila** auxPostfijo, EstructuraMemoria** auxMemoria, string& variable) {
-    // cout << "0 prueba.." << endl;
-    // imprimirPostfijo((*auxPostfijo));
-    // cout << (*auxPostfijo)->tamano() << endl;
-    // cout << "1 prueba.." << endl;
-    imprimirPostfijo((*auxPostfijo));
+    
     if((*auxPostfijo) != nullptr && (*auxPostfijo)->tamano() > 1) {
-        // cout << "auxPostfijo > 1..." << endl;
-        // cout << "antes: " << endl;
-        // imprimirPostfijo((*auxPostfijo));
-        
         agregarElementoMemoria(&(*auxMemoria), (*auxPostfijo)->simbolo);
         eliminarElementoPila(&(*auxPostfijo), (*auxPostfijo)->simbolo);
-        // cout << "despues: " << endl;
-        // imprimirPostfijo((*auxPostfijo));
+        
         agregarElementoOperacionMemoria(&(*auxMemoria), &(*auxPostfijo));
         generarInstruccionMemoria(auxPostfijo, auxMemoria, variable);
     }  
     else if((*auxPostfijo) != nullptr && (*auxPostfijo)->tamano() == 1) {
-        // cout << "auxPostfijo == 1..." << endl;
         if((*auxMemoria) == nullptr) {
             (*auxMemoria) = new EstructuraMemoria {contadorInstrucciones++, (20*multiplicador)+abs(buscarUbicacionElementoTS((*auxPostfijo)->simbolo)), nullptr};
             (*auxMemoria)->sig = new EstructuraMemoria {contadorInstrucciones++, (21*multiplicador)+abs(buscarUbicacionElementoTS(variable)), nullptr};
@@ -348,14 +313,6 @@ void Frontend::vaciarMemoriaAux(EstructuraMemoria* auxMemoria) {
 
 void Frontend::generarInstruccionLet(Pila* postfijo, string& variable) {
     EstructuraMemoria* ptrMemoria = nullptr;
-    // string s = "";
-    // Pila* aux = postfijo;
-    // while(aux!=nullptr) {
-    //    s += aux->simbolo;
-    //    aux = aux->sig;
-    // }
-    // cout << "postfijo: " << s << endl;
-
     generarInstruccionMemoria(&postfijo, &ptrMemoria, variable);
     vaciarMemoriaAux(ptrMemoria);
     Pila* auxPostfijo = postfijo;
@@ -376,7 +333,6 @@ void Frontend::generarInstruccionLet(Pila* postfijo, string& variable) {
 }
 
 Pila* Frontend::infijoAPostfijo(string& operacion) {
-    //cout <<"infijo: " <<operacion << endl;
     Pila* postfijo = nullptr;
     string infijo = operacion + ")";
     string auxToken = ""; // ojo, acomodar este metodo de asignacion de char to string
@@ -407,7 +363,7 @@ Pila* Frontend::infijoAPostfijo(string& operacion) {
             contToken += auxToken;
             contToken = "";
         }
-        //----------------------
+        
         auxToken = "";
     }
     while(pila != nullptr) {
@@ -610,7 +566,7 @@ vector<string> Frontend::generarVectorExpresion(const string& expresion) {
     vector<string> vExpresion;
     string tokens = "";
     string sToken = "";
-    //cout << "expresion: " << expresion << endl;
+    
     for(const char cToken:expresion) {
         sToken = cToken;
 
@@ -672,16 +628,16 @@ void Frontend::agregarElementoTablaSimbolo(const string& sSimbolo, const char ti
         while(entrada0->sig != nullptr) {
             entrada0 = entrada0->sig;
         }
-        if(tipo == LINEA && !existeElementoTablaSimbolo(sSimbolo, tipo)) {
+        if(tipo == LINEA && !existeElementoTablaSimbolo(sSimbolo, LINEA)) {
             entrada0->sig = new EntradaTabla{stoi(sSimbolo), "", tipo, 0, nullptr};
         }
-        else if(tipo == LINEA && existeElementoTablaSimbolo(sSimbolo, tipo)) {
+        else if(tipo == LINEA && existeElementoTablaSimbolo(sSimbolo, LINEA)) {
             throw lib::ELineaRepetida("Error, la linea '"+sSimbolo+"' ya se encuentra registrada.");
         }
-        else if(tipo == VARIABLE && !existeElementoTablaSimbolo(sSimbolo, tipo)) {
+        else if(tipo == VARIABLE && !existeElementoTablaSimbolo(sSimbolo, VARIABLE)) {
             entrada0->sig = new EntradaTabla{-1, sSimbolo, tipo, 0, nullptr};
         }
-        else if(tipo == CONSTANTE && !existeElementoTablaSimbolo(sSimbolo, tipo)) {
+        else if(tipo == CONSTANTE && !existeElementoTablaSimbolo(sSimbolo, CONSTANTE)) {
             entrada0->sig = new EntradaTabla{stoi(sSimbolo), "", tipo, 0, nullptr};
         }
 
@@ -712,11 +668,15 @@ bool Frontend::existeElementoTablaSimbolo(const string simbolo, const char& tipo
 
     while(entrada != nullptr) {
 
-        if(tipo == LINEA && tipo == entrada->tipo && entrada->iSimbolo == stoi(simbolo)) {
+        if(tipo==LINEA && tipo == entrada->tipo && entrada->iSimbolo == stoi(simbolo)) {
             resultado = true;
             break;
         } 
-        else if(tipo != LINEA && tipo == entrada->tipo && entrada->sSimbolo == simbolo){
+        if(tipo==CONSTANTE && tipo == entrada->tipo && entrada->iSimbolo == stoi(simbolo)) {
+            resultado = true;
+            break;
+        } 
+        else if(tipo==VARIABLE && tipo == entrada->tipo && entrada->sSimbolo == simbolo){
             resultado = true;
             break;
         }
@@ -754,8 +714,9 @@ void Frontend::llenarMemoriaVariables() {
 }
 
 void Frontend::agregarConstanteMemoria(int& constante, EntradaTabla& refEntrada) {
+    string sConstante = to_string(constante);
     if(memoria == nullptr) {
-        memoria = new EstructuraMemoria{contadorInstrucciones, (constante < 0)?((90*multiplicador)+abs(constante))*(-1):(90*multiplicador)+constante, nullptr};
+        memoria = new EstructuraMemoria{contadorInstrucciones, constante, nullptr};
         refEntrada.ubicacion = contadorInstrucciones;
         contadorInstrucciones++;
     }
@@ -766,7 +727,7 @@ void Frontend::agregarConstanteMemoria(int& constante, EntradaTabla& refEntrada)
             auxMemoria = auxMemoria->sig;
         } 
 
-        auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones, (constante < 0)?((90*multiplicador)+abs(constante))*(-1):(90*multiplicador)+constante, nullptr};
+        auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones, constante, nullptr};
         refEntrada.ubicacion = contadorInstrucciones;
         contadorInstrucciones++;
     }
