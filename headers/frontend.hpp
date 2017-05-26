@@ -19,6 +19,16 @@ struct EstructuraMemoria {
     int ubicacion;
     int instruccion;
     EstructuraMemoria* sig;
+
+    int tamano();
+};
+
+struct Pila {
+    string simbolo;
+    bool estado;
+    struct Pila* sig; 
+    struct Pila* ant;
+    int tamano();
 };
 
 class Frontend {
@@ -42,6 +52,7 @@ class Frontend {
         EstructuraMemoria* memoria;
         int contadorInstrucciones;
         int multiplicador;
+        int contadorInstruccionesAux;
 
     protected: // metodos
          void primeraPasada();
@@ -74,6 +85,22 @@ class Frontend {
          void generarInstruccionPrint(string);
          void generarInstruccionEnd();
          void generarInstruccionGoto(string);
+         void generarInstruccionLet(string, string);
+         void generarInstruccionIfGoto(string, string);
+         Pila* infijoAPostfijo(string&);
+         void agregarElementoPostfijo(Pila** ,string&);
+         void evaluarOperadorPostfijo(Pila**, Pila**, string&);
+         void agregarElementoPila(Pila**, string&);
+         void generarInstruccionLet(Pila*, string&);
+         
+         void generarInstruccionMemoria(Pila**, EstructuraMemoria**, string&);
+         void vaciarMemoriaAux(EstructuraMemoria*);
+         int buscarUbicacionElementoTS(const string&);
+         void agregarElementoMemoria(EstructuraMemoria**, string&);
+         void eliminarElementoPila(Pila**, string&);
+         void agregarElementoOperacionMemoria(EstructuraMemoria**, Pila**);
+         void agregarVariableTS(EstructuraMemoria**, Pila**);
+
          void vaciarMemoria();
          void vaciarTablaSimbolo();
 };

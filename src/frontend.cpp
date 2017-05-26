@@ -15,6 +15,29 @@ const char VARIABLE = 'V';
 const char CONSTANTE = 'C';
 const char LINEA = 'L';
 
+int EstructuraMemoria::tamano() {
+    int contador = 0;
+
+    EstructuraMemoria* auxMemoria = this;
+    while(auxMemoria != nullptr) {
+        auxMemoria = auxMemoria->sig;
+        contador++;
+    }
+
+    return contador;
+}
+
+int Pila::tamano() {
+    int contador = 0;
+    Pila* auxMemoria = this;
+
+    while(auxMemoria != nullptr) {
+        auxMemoria = auxMemoria->sig;
+        contador++;
+    }
+    return contador;
+}
+
 Frontend::Frontend(string nFichero) {
     this->nFichero = nFichero;
     // inicializacion de las expresiones regulares
@@ -35,6 +58,7 @@ Frontend::Frontend(string nFichero) {
     memoria = nullptr;
     contadorInstrucciones = 0;
     multiplicador = 100;
+    contadorInstruccionesAux = 0;
 }
 
 void Frontend::vaciarMemoria() {
@@ -118,7 +142,7 @@ void Frontend::analizarInstruccion(string& instruccion) {
     }
     else if(regex_match(instruccion, sm, regex {eLet})) {
         actualizarUbicacionTS(sm[1], LINEA);
-
+        generarInstruccionLet(sm[3], sm[5]);
     }
     else if(regex_match(instruccion, sm, regex {ePrint})) {
         actualizarUbicacionTS(sm[1], LINEA);
@@ -126,7 +150,7 @@ void Frontend::analizarInstruccion(string& instruccion) {
     }   
     else if(regex_match(instruccion, sm, regex {eIfGoto})) {
         actualizarUbicacionTS(sm[1], LINEA);
-
+        generarInstruccionIfGoto(sm[3], sm[5]);
     }
     else if(regex_match(instruccion, sm, regex {eGoto})) {
         actualizarUbicacionTS(sm[1], LINEA);
@@ -135,6 +159,330 @@ void Frontend::analizarInstruccion(string& instruccion) {
     else if(regex_match(instruccion, sm, regex {eEnd})) {
         actualizarUbicacionTS(sm[1], LINEA);
         generarInstruccionEnd();
+    }
+}
+
+void Frontend::generarInstruccionIfGoto(string comparacion, string linea) {
+    // comparacion = regex_replace(comparacion, regex {"\\s"}, "");
+    // cout << "comparacion: " << comparacion << endl;
+    // cout << "linea: " << linea << endl;
+}
+
+void Frontend::generarInstruccionLet(string variable, string operacion) {
+    operacion = regex_replace(operacion, regex{"\\s"}, "");
+    Pila* postfijo = infijoAPostfijo(operacion);
+    
+    generarInstruccionLet(postfijo, variable);
+}
+
+void imprimirPostfijo(Pila* p) {
+    string s = "";
+    while(p != nullptr) {
+        s += p->simbolo;
+        p = p->sig;
+    }
+    cout << "post: " << s << endl;
+}
+
+void Frontend::agregarElementoMemoria(EstructuraMemoria** auxMemoria, string& simbolo) {
+    // cout << "variable 0: " << simbolo << endl;
+    // cout << "b: " << buscarUbicacionElementoTS(simbolo) << endl;
+    if((*auxMemoria) == nullptr) {
+        (*auxMemoria) = new EstructuraMemoria{contadorInstrucciones++, (20*multiplicador)+buscarUbicacionElementoTS(simbolo), nullptr};
+    }
+    else {
+        EstructuraMemoria* memo = (*auxMemoria);
+        while(memo->sig != nullptr) {memo = memo->sig;}
+
+        memo->sig = new EstructuraMemoria{contadorInstrucciones++, (20*multiplicador)+buscarUbicacionElementoTS(simbolo), nullptr}; 
+    }
+}
+
+void Frontend::agregarElementoOperacionMemoria(EstructuraMemoria** auxMemoria, Pila** auxPostfijo) {
+    // imprimirPostfijo((*auxPostfijo));
+    string  variable = (*auxPostfijo)->simbolo;
+    Pila* pPila = (*auxPostfijo);
+    (*auxPostfijo) = (*auxPostfijo)->sig;
+    (*auxPostfijo)->ant = nullptr;
+    delete pPila;
+    string tipo;
+    Pila* auxPila = (*auxPostfijo);
+    // cout << "\nabajo: " << endl;
+    // imprimirPostfijo((*auxPostfijo));
+    // cout << "arriba: \n" << endl;
+    
+    int c = 0;
+    while(auxPila != nullptr) {
+        if(regex_match(auxPila->simbolo, regex {"^[\\+-/\\*]$"})) {
+            // cout << "sale.." << auxPila->simbolo << endl;
+            // cout << "C.." << c << endl;   
+            tipo = auxPila->simbolo;
+            break;
+        }
+        c++;
+        Pila* pAnt = auxPila; 
+        auxPila = auxPila->sig;
+        auxPila->ant = pAnt;
+    }
+    // imprimirPostfijo((*auxPostfijo));
+    // cout << "+: " << auxPila->sig->simbolo << endl;
+    // cout << "6: " <<auxPila->ant->simbolo << endl;
+    if(auxPila->ant != nullptr) {
+        Pila* auxPila0 = auxPila->ant;
+        auxPila0->sig = auxPila->sig;
+    } 
+    else {
+        (*auxPostfijo) = (*auxPostfijo)->sig;
+    }
+    delete auxPila;
+    // imprimirPostfijo((*auxPostfijo));    
+
+    EstructuraMemoria* memo = (*auxMemoria);
+    while(memo->sig != nullptr) {memo=memo->sig;}
+    
+
+    if(tipo == "+") {
+       
+        memo->sig = new EstructuraMemoria{contadorInstrucciones++, (30*multiplicador)+abs(buscarUbicacionElementoTS(variable)), nullptr};
+    }
+    else if(tipo == "-") {
+        memo->sig = new EstructuraMemoria{contadorInstrucciones++, (31*multiplicador)+abs(buscarUbicacionElementoTS(variable)), nullptr};
+    }
+    else if(tipo == "/") {
+        memo->sig = new EstructuraMemoria{contadorInstrucciones++, (32*multiplicador)+abs(buscarUbicacionElementoTS(variable)), nullptr};
+    }
+    else if(tipo == "*") {
+        memo->sig = new EstructuraMemoria{contadorInstrucciones++, (33*multiplicador)+abs(buscarUbicacionElementoTS(variable)), nullptr};
+    }
+
+    agregarVariableTS(auxMemoria, auxPostfijo);
+}
+
+
+void Frontend::agregarVariableTS(EstructuraMemoria** auxMemoria, Pila** auxPostfijo) {
+    EntradaTabla* entrada = tablaSimbolo;
+    while(entrada->sig != nullptr) {entrada = entrada->sig;}
+    string instruccion = "_"+to_string(contadorInstruccionesAux++);
+    entrada->sig = new EntradaTabla{-1, instruccion, VARIABLE, contadorInstrucciones, nullptr};
+
+    EstructuraMemoria* memo = (*auxMemoria);
+    while(memo->sig != nullptr) {memo = memo->sig;}   
+    int auxUbicacion = contadorInstrucciones;
+    memo->sig = new EstructuraMemoria{contadorInstrucciones++, (91*multiplicador), nullptr};
+    memo->sig->sig = new EstructuraMemoria{contadorInstrucciones++, (21*multiplicador)+(auxUbicacion), nullptr};
+    
+    Pila* pila = new Pila{instruccion, true, (*auxPostfijo), nullptr};
+    (*auxPostfijo) = pila;
+}
+
+void Frontend::eliminarElementoPila(Pila** pila, string& simbolo) {
+    Pila* auxPila = (*pila);
+
+    while(auxPila != nullptr) {
+        if(auxPila->simbolo == simbolo) {
+            break;
+        } 
+        auxPila = auxPila->sig;
+    }
+
+    if(auxPila != nullptr) {
+        if(auxPila->ant != nullptr) {
+            Pila* auxPila1 = auxPila->ant;
+            auxPila1->sig = auxPila->sig;
+        }
+        else {
+            (*pila) = (*pila)->sig;
+            (*pila)->ant = nullptr;
+        }
+        delete auxPila;
+    }
+}
+
+void Frontend::generarInstruccionMemoria(Pila** auxPostfijo, EstructuraMemoria** auxMemoria, string& variable) {
+    // cout << "0 prueba.." << endl;
+    // imprimirPostfijo((*auxPostfijo));
+    // cout << (*auxPostfijo)->tamano() << endl;
+    // cout << "1 prueba.." << endl;
+    imprimirPostfijo((*auxPostfijo));
+    if((*auxPostfijo) != nullptr && (*auxPostfijo)->tamano() > 1) {
+        // cout << "auxPostfijo > 1..." << endl;
+        // cout << "antes: " << endl;
+        // imprimirPostfijo((*auxPostfijo));
+        
+        agregarElementoMemoria(&(*auxMemoria), (*auxPostfijo)->simbolo);
+        eliminarElementoPila(&(*auxPostfijo), (*auxPostfijo)->simbolo);
+        // cout << "despues: " << endl;
+        // imprimirPostfijo((*auxPostfijo));
+        agregarElementoOperacionMemoria(&(*auxMemoria), &(*auxPostfijo));
+        generarInstruccionMemoria(auxPostfijo, auxMemoria, variable);
+    }  
+    else if((*auxPostfijo) != nullptr && (*auxPostfijo)->tamano() == 1) {
+        // cout << "auxPostfijo == 1..." << endl;
+        if((*auxMemoria) == nullptr) {
+            (*auxMemoria) = new EstructuraMemoria {contadorInstrucciones++, (20*multiplicador)+abs(buscarUbicacionElementoTS((*auxPostfijo)->simbolo)), nullptr};
+            (*auxMemoria)->sig = new EstructuraMemoria {contadorInstrucciones++, (21*multiplicador)+abs(buscarUbicacionElementoTS(variable)), nullptr};
+            
+        }   
+        else {
+            EstructuraMemoria* aux = (*auxMemoria);
+            while(aux->sig != nullptr) {aux = aux->sig;}
+            aux->sig = new EstructuraMemoria {contadorInstrucciones++, (20*multiplicador)+buscarUbicacionElementoTS((*auxPostfijo)->simbolo), nullptr};
+            aux->sig->sig = new EstructuraMemoria {contadorInstrucciones++, (21*multiplicador)+buscarUbicacionElementoTS(variable), nullptr};
+        }
+    }
+
+}
+
+int Frontend::buscarUbicacionElementoTS(const string& variable) {
+    char tipo = VARIABLE;
+    int ubicacion = -1;
+    if(regex_match(variable, regex {"^[0-9]+$"})) {
+        
+        tipo = CONSTANTE;
+    }
+
+    EntradaTabla* entrada = tablaSimbolo;
+    while(entrada != nullptr) {
+        if(tipo == CONSTANTE && tipo == entrada->tipo && entrada->iSimbolo == stoi(variable)) {
+            ubicacion = entrada->ubicacion;
+            break;
+        }
+        else if(tipo == VARIABLE &&  tipo == entrada->tipo && entrada->sSimbolo == variable) {
+            ubicacion = entrada->ubicacion;
+            break;
+        }
+        entrada = entrada->sig;
+    }
+    return ubicacion;
+}
+
+void Frontend::vaciarMemoriaAux(EstructuraMemoria* auxMemoria) {
+    EstructuraMemoria* memo = memoria;
+    while(memo->sig != nullptr) {memo = memo->sig;}
+
+    EstructuraMemoria* aux = auxMemoria;
+    while(aux != nullptr) {
+        memo->sig = new EstructuraMemoria {aux->ubicacion, aux->instruccion, nullptr};
+        memo = memo->sig;
+        aux = aux->sig;
+    }
+}
+
+void Frontend::generarInstruccionLet(Pila* postfijo, string& variable) {
+    EstructuraMemoria* ptrMemoria = nullptr;
+    // string s = "";
+    // Pila* aux = postfijo;
+    // while(aux!=nullptr) {
+    //    s += aux->simbolo;
+    //    aux = aux->sig;
+    // }
+    // cout << "postfijo: " << s << endl;
+
+    generarInstruccionMemoria(&postfijo, &ptrMemoria, variable);
+    vaciarMemoriaAux(ptrMemoria);
+    Pila* auxPostfijo = postfijo;
+    while(postfijo != nullptr) {
+        auxPostfijo = postfijo;
+        postfijo = postfijo->sig;
+        delete auxPostfijo;
+    }
+    auxPostfijo = nullptr;
+    
+    EstructuraMemoria* auxMemoria = nullptr;
+    while(ptrMemoria != nullptr) {
+        auxMemoria = ptrMemoria;
+        ptrMemoria = ptrMemoria->sig;
+        delete auxMemoria;
+    }
+    auxMemoria = nullptr;
+}
+
+Pila* Frontend::infijoAPostfijo(string& operacion) {
+    //cout <<"infijo: " <<operacion << endl;
+    Pila* postfijo = nullptr;
+    string infijo = operacion + ")";
+    string auxToken = ""; // ojo, acomodar este metodo de asignacion de char to string
+    string contToken = "";
+
+    Pila* pila = new Pila{"(", true, nullptr, nullptr};
+
+    for(char& token:infijo) {
+        auxToken += token;
+        //----------------------
+        if(regex_match(auxToken, regex {"^[0-9a-zA-Z]$"})) {
+            contToken += auxToken;
+        }
+        else {
+            if(contToken.length() != 0) {                
+                agregarElementoPostfijo(&postfijo, contToken);
+                contToken = "";
+            }
+            if(regex_match(auxToken, regex{"^[\\+-/\\*]$"})) {
+                evaluarOperadorPostfijo(&pila, &postfijo, auxToken);
+            }
+            else if(regex_match(auxToken, regex{"^[\\(]$"})) {
+                agregarElementoPila(&pila, auxToken);
+            }
+            else if(regex_match(auxToken, regex{"^[\\)]$"})) {
+                evaluarOperadorPostfijo(&pila, &postfijo, auxToken);
+            }
+            contToken += auxToken;
+            contToken = "";
+        }
+        //----------------------
+        auxToken = "";
+    }
+    while(pila != nullptr) {
+        Pila* auxPila = pila;
+        pila = pila->sig; 
+        delete auxPila;
+    } 
+    return postfijo;
+}
+
+void Frontend::evaluarOperadorPostfijo(Pila** ptrPila, Pila** ptrPostfijo, string& operador) {
+    Pila* auxPila = *ptrPila;
+    int tipo = -1;
+    
+    while(auxPila->sig != nullptr) {auxPila = auxPila->sig;}
+    if(regex_match(operador, regex {"^\\+-$"})) { tipo = 0;} 
+    else if(regex_match(operador, regex {"^[\\*/]$"})) {tipo = 1;}
+    else if(regex_match(operador, regex {"^[\\)]$"})) {tipo = 2;}
+
+    while(auxPila != nullptr) {
+        if(auxPila->estado && regex_match(operador, regex {"^[\\(]$"})) {
+            if(tipo==2){auxPila->estado=false;}
+            break;
+        }   
+        else if((tipo == 0 || tipo == 2) && auxPila->estado && regex_match(auxPila->simbolo, regex {"^[\\+-/\\*]$"})){
+            agregarElementoPostfijo(&(*ptrPostfijo), auxPila->simbolo);
+            auxPila->estado = false;
+        }
+        else if(tipo == 1 && auxPila->estado && regex_match(auxPila->simbolo, regex {"^[\\*/]$"})){
+            agregarElementoPostfijo(&(*ptrPostfijo), auxPila->simbolo);
+            auxPila->estado = false;
+        }
+        auxPila = auxPila->ant;
+    }
+    
+    if(tipo!=2) {agregarElementoPila(&(*ptrPila), operador);} 
+}
+
+void Frontend::agregarElementoPila(Pila** ptrPila, string& operador) {
+    Pila* auxPila = *ptrPila;
+    while(auxPila->sig != nullptr) { auxPila=auxPila->sig; }
+
+    auxPila->sig = new Pila{operador, true, nullptr, auxPila};
+}
+
+void Frontend::agregarElementoPostfijo(Pila** ptrPostfijo, string& simbolo) {
+    if(*ptrPostfijo == nullptr) {
+        *ptrPostfijo = new Pila{simbolo, true, nullptr, nullptr};
+    }
+    else {
+        Pila* auxPostfijo = *ptrPostfijo;
+        while(auxPostfijo->sig != nullptr) {auxPostfijo = auxPostfijo->sig;}
+        auxPostfijo->sig = new Pila{simbolo, true, nullptr, auxPostfijo};        
     }
 }
 
@@ -219,9 +567,8 @@ int Frontend::buscarUbicacionElementoTS(const string& sSimbolo, const char& tipo
 
 void Frontend::actualizarUbicacionTS(string sSimbolo, const char& tipo) {
     if(tipo == LINEA) {
-        EntradaTabla* entrada = tablaSimbolo;
         int iSimbolo = stoi(sSimbolo);
-
+        EntradaTabla* entrada = tablaSimbolo;
         while(entrada != nullptr) {
             if(entrada->iSimbolo == iSimbolo) {
                 entrada->ubicacion = contadorInstrucciones;
@@ -332,13 +679,13 @@ void Frontend::evaluarExpresion(string expresion, string linea) {
 void Frontend::agregarElementoTablaSimbolo(const string& sSimbolo, const char tipo) {
     if(tablaSimbolo == nullptr) {
         if(tipo == LINEA && !existeElementoTablaSimbolo(sSimbolo, tipo)) {
-            tablaSimbolo = new EntradaTabla{stoi(sSimbolo), "", tipo, 0};
+            tablaSimbolo = new EntradaTabla{stoi(sSimbolo), "", tipo, 0, nullptr};
         }
         else if(tipo == VARIABLE && !existeElementoTablaSimbolo(sSimbolo, tipo)) {
-            tablaSimbolo = new EntradaTabla{-1, sSimbolo, tipo, 0};
+            tablaSimbolo = new EntradaTabla{-1, sSimbolo, tipo, 0, nullptr};
         }
         else if(tipo == CONSTANTE && !existeElementoTablaSimbolo(sSimbolo, tipo)) {
-            tablaSimbolo = new EntradaTabla{stoi(sSimbolo), "", tipo, 0};
+            tablaSimbolo = new EntradaTabla{stoi(sSimbolo), "", tipo, 0, nullptr};
         }
     }
     else {
@@ -348,16 +695,16 @@ void Frontend::agregarElementoTablaSimbolo(const string& sSimbolo, const char ti
             entrada0 = entrada0->sig;
         }
         if(tipo == LINEA && !existeElementoTablaSimbolo(sSimbolo, tipo)) {
-            entrada0->sig = new EntradaTabla{stoi(sSimbolo), "", tipo, 0};
+            entrada0->sig = new EntradaTabla{stoi(sSimbolo), "", tipo, 0, nullptr};
         }
         else if(tipo == LINEA && existeElementoTablaSimbolo(sSimbolo, tipo)) {
             throw lib::ELineaRepetida("Error, la linea '"+sSimbolo+"' ya se encuentra registrada.");
         }
         else if(tipo == VARIABLE && !existeElementoTablaSimbolo(sSimbolo, tipo)) {
-            entrada0->sig = new EntradaTabla{-1, sSimbolo, tipo, 0};
+            entrada0->sig = new EntradaTabla{-1, sSimbolo, tipo, 0, nullptr};
         }
         else if(tipo == CONSTANTE && !existeElementoTablaSimbolo(sSimbolo, tipo)) {
-            entrada0->sig = new EntradaTabla{stoi(sSimbolo), "", tipo, 0};
+            entrada0->sig = new EntradaTabla{stoi(sSimbolo), "", tipo, 0, nullptr};
         }
 
     }
@@ -474,7 +821,12 @@ void Frontend::imprimirMemoria() {
     cout << "\tInstruccion\t\t Ubicacion" << endl;
 
     while(auxMemoria != nullptr) {
-        cout << "\t  " << auxMemoria->instruccion << "\t \t\t  " << auxMemoria->ubicacion << endl;
+        if(auxMemoria->ubicacion != -1) {
+            cout << "\t  " << auxMemoria->instruccion << "\t \t\t  " << auxMemoria->ubicacion << endl;
+        }
+        else {
+            cout << "\t  " << auxMemoria->instruccion << endl;
+        }
         auxMemoria = auxMemoria->sig;
     }
     
