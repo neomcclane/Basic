@@ -9,34 +9,12 @@
 #include "../headers/libreria.hpp"
 
 using namespace std;
+using namespace lib;
 
 const int TAM_LINEA = 128;
 const char VARIABLE = 'V';
 const char CONSTANTE = 'C';
 const char LINEA = 'L';
-
-int EstructuraMemoria::tamano() {
-    int contador = 0;
-
-    EstructuraMemoria* auxMemoria = this;
-    while(auxMemoria != nullptr) {
-        auxMemoria = auxMemoria->sig;
-        contador++;
-    }
-
-    return contador;
-}
-
-int Pila::tamano() {
-    int contador = 0;
-    Pila* auxMemoria = this;
-
-    while(auxMemoria != nullptr) {
-        auxMemoria = auxMemoria->sig;
-        contador++;
-    }
-    return contador;
-}
 
 Frontend::Frontend(string nFichero) {
     this->nFichero = nFichero;
@@ -112,10 +90,11 @@ void Frontend::primeraPasada() {
     analizaEstructuraLineas();
 }
 
-void Frontend::segundaPasada() {
+EstructuraMemoria* Frontend::segundaPasada() {
     llenarMemoria();
-    imprimirTablaSimbolo();
-    imprimirMemoria();
+    // imprimirTablaSimbolo();
+    // imprimirMemoria();
+    return memoria;
 }
 
 void Frontend::llenarMemoria() {
@@ -181,7 +160,6 @@ void imprimirPostfijo(Pila* p) {
         s += p->simbolo;
         p = p->sig;
     }
-    cout << "post: " << s << endl;
 }
 
 void Frontend::agregarElementoMemoria(EstructuraMemoria** auxMemoria, string& simbolo) {

@@ -4,10 +4,11 @@
 #include <iostream>
 #include <vector>
 #include "frontend.hpp"
+#include "backend.hpp"
 
 using namespace std;
 
-class Compilador:public Frontend {
+class Compilador:public Frontend, public Backend {
     public: //metodos
         Compilador(string);
         ~Compilador();

@@ -8,6 +8,31 @@
 using namespace std;
 
 namespace lib {
+    // estructuras
+    struct EntradaTabla {
+        int iSimbolo;
+        string sSimbolo;
+        char tipo;
+        int ubicacion;
+        EntradaTabla* sig;
+    };
+
+    struct EstructuraMemoria {
+        int ubicacion;
+        int instruccion;
+        EstructuraMemoria* sig;
+
+        int tamano();
+    };
+
+    struct Pila {
+        string simbolo;
+        bool estado;
+        struct Pila* sig; 
+        struct Pila* ant;
+        int tamano();
+    };
+
     // excepciones
     class ENombreFichero: public runtime_error {
         public:

@@ -4,32 +4,10 @@
 #include <iostream>
 #include <vector>
 #include <regex>
+#include "libreria.hpp"
 
 using namespace std;
-
-struct EntradaTabla {
-    int iSimbolo;
-    string sSimbolo;
-    char tipo;
-    int ubicacion;
-    EntradaTabla* sig;
-};
-
-struct EstructuraMemoria {
-    int ubicacion;
-    int instruccion;
-    EstructuraMemoria* sig;
-
-    int tamano();
-};
-
-struct Pila {
-    string simbolo;
-    bool estado;
-    struct Pila* sig; 
-    struct Pila* ant;
-    int tamano();
-};
+using namespace lib;
 
 class Frontend {
     public: //metodos
@@ -56,7 +34,7 @@ class Frontend {
 
     protected: // metodos
          void primeraPasada();
-         void segundaPasada();
+         EstructuraMemoria* segundaPasada();
     
     private: // metodos
          void abrirFichero();

@@ -6,6 +6,29 @@
 
 using namespace std;
 
+int lib::EstructuraMemoria::tamano() {
+    int contador = 0;
+
+    EstructuraMemoria* auxMemoria = this;
+    while(auxMemoria != nullptr) {
+        auxMemoria = auxMemoria->sig;
+        contador++;
+    }
+
+    return contador;
+}
+
+int lib::Pila::tamano() {
+    int contador = 0;
+    Pila* auxMemoria = this;
+
+    while(auxMemoria != nullptr) {
+        auxMemoria = auxMemoria->sig;
+        contador++;
+    }
+    return contador;
+}
+
 void lib::validarFichero(string& nFichero) {
 
     regex e("(.*)(\\.)(bsl)");
