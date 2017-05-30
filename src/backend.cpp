@@ -40,7 +40,7 @@ void Backend::analizarMemoria(lib::EstructuraMemoria* eMemoria) {
         registroInstruccion = memoria[contadorInstrucciones];
         codigoOperacion = registroInstruccion/100;
         operando = registroInstruccion%100; 
-
+        
         switch(codigoOperacion) {
             case 10:
                 cin >>  memoria[operando];
@@ -88,10 +88,12 @@ void Backend::analizarMemoria(lib::EstructuraMemoria* eMemoria) {
             
             case 41:
                 if(acumulador < 0) {contadorInstrucciones = operando;}
+                else {contadorInstrucciones++;}
                 break;
             
             case 42:
                 if(acumulador == 0) {contadorInstrucciones = operando;}
+                else {contadorInstrucciones++;}
                 break;
 
             case 43:

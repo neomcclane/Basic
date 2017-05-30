@@ -89,15 +89,37 @@ void Frontend::primeraPasada() {
 
 EstructuraMemoria* Frontend::segundaPasada() {
     llenarMemoria();
-    imprimirTablaSimbolo();
-    imprimirMemoria();
+    resolverReferenciasAdelantadas();
+    // imprimirTablaSimbolo();
+    // imprimirMemoria();
     return memoria;
+}
+
+void Frontend::resolverReferenciasAdelantadas() {
+    EstructuraMemoria* memo = memoria;
+
+    while(memo != nullptr) {
+        if(regex_match(to_string(memo->instruccion), regex {"^(40[0-9]{2,})$"})) {
+            string operando = to_string(memo->instruccion%100);
+            memo->instruccion = (40*100)+buscarUbicacionElementoTS(operando, LINEA);
+        }
+        else if(regex_match(to_string(memo->instruccion), regex {"^(41[0-9]{2,})$"})) {
+            string operando = to_string(memo->instruccion%100);
+            memo->instruccion = (41*100)+buscarUbicacionElementoTS(operando, LINEA);
+        }
+        else if(regex_match(to_string(memo->instruccion), regex {"^(42[0-9]{2,})$"})) {
+            string operando = to_string(memo->instruccion%100);
+            memo->instruccion = (42*100)+buscarUbicacionElementoTS(operando, LINEA);
+        }
+        memo = memo->sig;
+    }
 }
 
 void Frontend::llenarMemoria() {
     llenarMemoriaConstantes();
     llenarMemoriaVariables();
     llenarMemoriaInstrucciones();
+    
 }
 
 void Frontend::llenarMemoriaInstrucciones() {
@@ -113,8 +135,7 @@ void Frontend::analizarInstruccion(string& instruccion) {
     }
     else if(regex_match(instruccion, sm, regex {eInput})) {
         actualizarUbicacionTS(sm[1], LINEA);   
-        generarInstruccionInput(sm[3]);
-           
+        generarInstruccionInput(sm[3]);       
     }
     else if(regex_match(instruccion, sm, regex {eLet})) {
         actualizarUbicacionTS(sm[1], LINEA);
@@ -139,7 +160,67 @@ void Frontend::analizarInstruccion(string& instruccion) {
 }
 
 void Frontend::generarInstruccionIfGoto(string comparacion, string linea) {
-    // -------------------
+    comparacion = regex_replace(comparacion, regex {"\\s"},"");
+    analizarComparacionIfGoto(comparacion, linea);
+}
+
+void Frontend::analizarComparacionIfGoto(string& comparacion, string& salto) {
+    string auxString = "";
+    vector<string> arrayComparacion;
+    for(char& token:comparacion) {
+        auxString = token;
+        arrayComparacion.push_back(auxString);
+    }
+    
+    EstructuraMemoria* auxMemoria = memoria;
+    while(auxMemoria->sig != nullptr) {auxMemoria=auxMemoria->sig;}
+
+    string operador = "";
+    if(arrayComparacion.size() == 3) {
+        operador = arrayComparacion[1];
+        if(operador == "<") {
+            auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones++, (20*multiplicador)+buscarUbicacionElementoTS(arrayComparacion[0]), nullptr};
+            auxMemoria = auxMemoria->sig;
+            auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones++, (31*multiplicador)+buscarUbicacionElementoTS(arrayComparacion[2]), nullptr};
+            auxMemoria = auxMemoria->sig;
+            auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones++, (41*multiplicador)+stoi(salto), nullptr};
+        }
+        else if(operador == ">") {
+            auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones++, (20*multiplicador)+buscarUbicacionElementoTS(arrayComparacion[2]), nullptr};            
+            auxMemoria = auxMemoria->sig;            
+            auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones++, (31*multiplicador)+buscarUbicacionElementoTS(arrayComparacion[0]), nullptr};
+            auxMemoria = auxMemoria->sig;                        
+            auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones++, (41*multiplicador)+stoi(salto), nullptr};
+        }        
+    }
+    else if(arrayComparacion.size() == 4) {
+        operador = arrayComparacion[1]+""+arrayComparacion[2];        
+        if(operador == "==") {
+            auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones++, (20*multiplicador)+buscarUbicacionElementoTS(arrayComparacion[0]), nullptr};
+            auxMemoria = auxMemoria->sig;            
+            auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones++, (31*multiplicador)+buscarUbicacionElementoTS(arrayComparacion[3]), nullptr};
+            auxMemoria = auxMemoria->sig;            
+            auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones++, (42*multiplicador)+stoi(salto), nullptr};
+        }
+        else if(operador == "<=") {
+            auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones++, (20*multiplicador)+buscarUbicacionElementoTS(arrayComparacion[0]), nullptr};
+            auxMemoria = auxMemoria->sig;            
+            auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones++, (31*multiplicador)+buscarUbicacionElementoTS(arrayComparacion[3]), nullptr};
+            auxMemoria = auxMemoria->sig;            
+            auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones++, (42*multiplicador)+stoi(salto), nullptr};
+            auxMemoria = auxMemoria->sig;            
+            auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones++, (41*multiplicador)+stoi(salto), nullptr};
+        }
+        else if(operador == ">=") {
+            auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones++, (20*multiplicador)+buscarUbicacionElementoTS(arrayComparacion[3]), nullptr};
+            auxMemoria = auxMemoria->sig;            
+            auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones++, (31*multiplicador)+buscarUbicacionElementoTS(arrayComparacion[0]), nullptr};
+            auxMemoria = auxMemoria->sig;            
+            auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones++, (42*multiplicador)+stoi(salto), nullptr};
+            auxMemoria = auxMemoria->sig;            
+            auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones++, (41*multiplicador)+stoi(salto), nullptr};
+        }
+    }    
 }
 
 void Frontend::generarInstruccionLet(string variable, string operacion) {
@@ -147,6 +228,19 @@ void Frontend::generarInstruccionLet(string variable, string operacion) {
     Pila* postfijo = infijoAPostfijo(operacion);
     
     generarInstruccionLet(postfijo, variable);
+}
+
+
+void Frontend::agregarElementoMemoria(EstructuraMemoria** memo, int& instruccion) {
+    if((*memo) == nullptr) {
+        (*memo) = new EstructuraMemoria{contadorInstrucciones++, instruccion, nullptr};
+    }
+    else {
+        EstructuraMemoria* ptrMemoria = (*memo);
+        while(ptrMemoria->sig != nullptr) {ptrMemoria=ptrMemoria->sig;}
+
+        ptrMemoria->sig = new EstructuraMemoria{contadorInstrucciones++, instruccion, nullptr};
+    }
 }
 
 void Frontend::agregarElementoMemoria(EstructuraMemoria** auxMemoria, string& simbolo) {
@@ -280,7 +374,6 @@ int Frontend::buscarUbicacionElementoTS(const string& variable) {
     char tipo = VARIABLE;
     int ubicacion = -1;
     if(regex_match(variable, regex {"^[0-9]+$"})) {
-        
         tipo = CONSTANTE;
     }
 
@@ -426,14 +519,8 @@ void Frontend::generarInstruccionGoto(string sSimbolo) {
     while(auxMemoria->sig != nullptr) {
         auxMemoria = auxMemoria->sig;
     }
-    int ubicacion = buscarUbicacionElementoTS(sSimbolo, LINEA);
-    if(ubicacion != -1) {
-        auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones, 40*multiplicador+ubicacion, nullptr};
-        contadorInstrucciones++;
-    }
-    else {
-        throw lib::EErrorUbicacionTS("Error, en la busqueda de la ubicacion dentro de la TS.");                
-    }
+    auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones, (40*multiplicador)+stoi(sSimbolo), nullptr};
+    contadorInstrucciones++;
 }
 
 void Frontend::generarInstruccionEnd() {
@@ -504,7 +591,7 @@ void Frontend::actualizarUbicacionTS(string sSimbolo, const char& tipo) {
         int iSimbolo = stoi(sSimbolo);
         EntradaTabla* entrada = tablaSimbolo;
         while(entrada != nullptr) {
-            if(entrada->iSimbolo == iSimbolo) {
+            if(entrada->iSimbolo == iSimbolo && entrada->tipo == LINEA) {
                 entrada->ubicacion = contadorInstrucciones;
                 break;
             }
@@ -722,10 +809,7 @@ void Frontend::agregarConstanteMemoria(int& constante, EntradaTabla& refEntrada)
     }
     else {
         EstructuraMemoria* auxMemoria = memoria;
-
-        while(auxMemoria->sig != nullptr) {
-            auxMemoria = auxMemoria->sig;
-        } 
+        while(auxMemoria->sig != nullptr) {auxMemoria = auxMemoria->sig;} 
 
         auxMemoria->sig = new EstructuraMemoria{contadorInstrucciones, constante, nullptr};
         refEntrada.ubicacion = contadorInstrucciones;

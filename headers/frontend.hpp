@@ -70,17 +70,20 @@ class Frontend {
          void evaluarOperadorPostfijo(Pila**, Pila**, string&);
          void agregarElementoPila(Pila**, string&);
          void generarInstruccionLet(Pila*, string&);
-         
          void generarInstruccionMemoria(Pila**, EstructuraMemoria**, string&);
          void vaciarMemoriaAux(EstructuraMemoria*);
          int buscarUbicacionElementoTS(const string&);
          void agregarElementoMemoria(EstructuraMemoria**, string&);
+         void agregarElementoMemoria(EstructuraMemoria**, int&);
          void eliminarElementoPila(Pila**, string&);
          void agregarElementoOperacionMemoria(EstructuraMemoria**, Pila**);
          void agregarVariableTS(EstructuraMemoria**, Pila**);
-
          void vaciarMemoria();
          void vaciarTablaSimbolo();
+
+         void resolverReferenciasAdelantadas();
+
+         void analizarComparacionIfGoto(string&, string&);
 };
 
 #endif //FRONTEND_HPP
